@@ -3,51 +3,80 @@ class cloudfoundry {
   include cloudfoundry::params
   require cloudfoundry::nodejs
 
-  # Create Cloudfoundry user and group
   user { $cloudfoundry::params::user:
       ensure => present,
       managehome => true,
   }
 
-  group { $cloudfoundry::params::group:
-      ensure => present,
-  }
-
-  # Install required packages
   package { $cloudfoundry::params::packages:
       ensure => installed,
   }
 
-  # Install rvm
   exec { "install rvm":
-      command => "bash < <(curl -s -k -B https://rvm.beginrescueend.com/install/rvm)",
-      creates => "/usr/local/bin/rvm",
+      command => 'bash -c \'bash <(/usr/bin/curl -s https://rvm.beginrescueend.com/install/rvm)\'',
+      creates => "/usr/local/rvm",
       cwd => "/home/$cloudfoundry::params::user",
+      path => "/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin",
+      require => [ Package[$cloudfoundry::params::packages], User[$cloudfoundry::params::user] ]
   }
 
-  package { [ "vmc", "mysql", "pg", "tilt", "daemons", "bundler", "rack", "rake", "thin", "sinatra", "eventmachine" ]:
-      ensure => latest,
-      provider => "gem",
+  rvm_system_ruby { "ruby-1.9.2-p180":
+    default_use => true,
+    provider => rvm_system_ruby,
+    require => Exec["install rvm"],  
+  }
+
+  Rvm_gem {
+      ruby_version => "1.9.2-p180",
+      provider => rvm__gem,
+  }
+
+  rvm_gem { "bundler":
+       ensure => "1.0.10",
+       provider => rvm_gem,
+       require => [ Package[$cloudfoundry::params::packages], Rvm_system_ruby["ruby-1.9.2-p180"] ],
+  }
+
+  rvm_gem { $cloudfoundry::params::gems:
+       provider => rvm_gem,
+       require => [ Package[$cloudfoundry::params::packages], Rvm_system_ruby["ruby-1.9.2-p180"] ],
   }
 
   exec { "create vcap repo":
-      command => "git clone https://github.com/cloudfoundry/vcap.git",
+      command => "/usr/bin/git clone https://github.com/cloudfoundry/vcap.git",
       creates => "/home/$cloudfoundry::params::user/vcap",
       cwd => "/home/$cloudfoundry::params::user",
-      require => Package[$cloudfoundry::params::packages],
+      timeout => 0,
+      require => [ User[$cloudfoundry::params::user], Package[$cloudfoundry::params::packages] ],
   }
 
   exec { "install vcap submodules":
-      command => "git submodule update --init"
-      creates => "/home/$cloudfoundry::params::user/vcap/tests",
+      command => "/usr/bin/git submodule update --init",
+      creates => "/home/$cloudfoundry::params::user/vcap/services/mysql/config",
       cwd => "/home/$cloudfoundry::params::user/vcap",
-      require => exec["create vcap repo"],
+      timeout => 0,
+      require => Exec["create vcap repo"],
   }
 
-  exec { "set mysql password":
-      command => "sed -i.bkup -e \'s/pass: root/pass: $cloudfoundry::params::mysql_password/\' mysql_node.yml",
-      cwd => "/home/$cloudfoundry::params::user/vcap/services/mysql/config",
-      require => [ User["$cloudfoundry::params::user"], exec["install vcap submodule"] ],
+  define bundle { 
+
+    exec { $name:
+      command => "bundle install",
+      cwd => "/home/$cloudfoundry::params::user/vcap/$name",
+      timeout => 0,
+      logoutput => true,
+      path => "/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin",
+      require => [ Exec["install vcap submodules"], Rvm_gem["bundler"], Rvm_gem[$cloudfoundry::params::gems] ],
+    }
+  }
+
+  bundle { [ $cloudfoundry::params::components ] : }
+
+  $mysql_password = $cloudfoundry::params::mysql_password
+  file { "/home/$cloudfoundry::params::user/vcap/services/mysql/config/mysql_node.yml":
+      ensure => present,
+      content => template("cloudfoundry/mysql_node.yml.erb"),
+      require => Exec["install vcap submodules"],
   }
 
   # Install VCAP directories
@@ -62,16 +91,22 @@ class cloudfoundry {
       require => File["/var/vcap"],
   }
 
-  file { "/var/vcap/sys/log":
+  file { [ "/var/vcap/sys/log", "/var/vcap/sys/run" ]:
       ensure => directory,
       owner => $cloudfoundry::params::user,
       require => File["/var/vcap/sys"],
   }
 
+  file { "/tmp/vcap-run/":
+      ensure => directory,
+      owner => $cloudfoundry::params::user,
+      mode => 0777,
+  }
+
   # Manage nginx
   file { "/etc/nginx/nginx.conf":
       ensure => present,
-      content => template("nginx.conf.erb"),
+      content => template("cloudfoundry/nginx.conf.erb"),
       owner => "root",
       group => "root",
       mode => 0400,
@@ -81,6 +116,9 @@ class cloudfoundry {
 
   service { "nginx":
       ensure => running,
-      enabled => true,
+      enable => true,
+      hasstatus => true,
+      hasrestart => true,
       require => Package[$cloudfoundry::params::packages],
   }
+}

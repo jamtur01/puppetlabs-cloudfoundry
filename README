@@ -1,3 +1,28 @@
-cloudfoundry module
+CloudFoundry Module
+===================
 
-This is the Puppet Labs cloudfoundry module.
+This is the Puppet Labs CloudFoundry module.
+
+It installs CloudFoundry on a host including all required packages and dependencies.
+
+The installation may be lengthly given several components (NodeJS particularly) of the 
+module require compilation.
+
+The module is made up of three classes:
+
+* cloudfoundry - the core class containined in init.pp
+* cloudfoundry::nodejs - installs NodeJS
+* cloudfoundry::params - contains the control parameters for the modules 
+
+In the cloudfoundry::params class you can set the user, group and password for your MySQL 
+instance.
+
+License
+-------
+
+Apache 2.0
+
+Credits
+-------
+
+All credit to Brandon Turner (https://github.com/blt04/puppet-rvm.git) for his rvm_gem type and provider.

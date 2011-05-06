@@ -4,6 +4,7 @@ class cloudfoundry::nodejs {
 
     package { $cloudfoundry::params::nodejs_packages:
         ensure => installed,
+        require => Exec[$cloudfoundry::params::package_update],
     }
 
     exec { "install nodejs":
@@ -13,7 +14,10 @@ class cloudfoundry::nodejs {
                 ./configure && \
                 make && \
                 make install",
-        cwd => "/home/$cloudfoundry::params::user",
+        path => "/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin",
+        cwd => "/tmp",
         creates => "/usr/local/bin/node",
+        timeout => 0,
+        require => Package[$cloudfoundry::params::nodejs_packages],
     }
 }
