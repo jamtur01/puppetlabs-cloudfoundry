@@ -1,20 +1,22 @@
 # Class: cloudfoundry
-#
 #   James Turnbull <james@lovedthanlost.net>
 #   Status: This class is working and installs CloudFoundry VCAP.
 #
 #   This class models CloudFoundry VCAP installation in Puppet
 #
 # Parameters:
-#
-#   $cloudfoundry::params::user           - User to run CloudFoundry 
-#   $cloudfoundry::params::packages       - Packages to install
-#   $cloudfoundry::params::gems           - Gems to install
-#   $cloudfoundry::params::components     - Components to Bundle gems for
-#   $cloudfoundry::params::mysql_password - The MySQL password to set 
+#   $cloudfoundry::params::user:
+#       User to run CloudFoundry 
+#   $cloudfoundry::params::packages:
+#       Packages to install
+#   $cloudfoundry::params::gems:
+#       Gems to install
+#   $cloudfoundry::params::components:
+#       Components to Bundle gems for
+#   $cloudfoundry::params::mysql_password:
+#       The MySQL password to set 
 #
 # Actions:
-#
 #   Creates a CloudFoundry user (defaults to cloudfoudry) and home directory
 #   Installs required packages
 #   Installs RVM (argh) and Ruby 1.9.2
@@ -23,11 +25,9 @@
 #   Installs and manages Nginx
 #
 # Requires:
-#
-#   NodeJS.  Available in class cloudfoundry::nodejs within this module
+#   - NodeJS.  Available in class cloudfoundry::nodejs within this module
 #
 # Sample Usage:
-#
 #   include cloudfoundry
 #
 class cloudfoundry {
@@ -95,18 +95,7 @@ class cloudfoundry {
       require => Rvm_gem["bundler"],
   }
 
-  define bundle { 
-    exec { $name:
-      command => "/tmp/bundle_install.sh",
-      cwd => "/home/$cloudfoundry::params::user/vcap/$name",
-      timeout => 0,
-      logoutput => true,
-      path => "/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin",
-      require => [ File["/tmp/bundle_install.sh"], Exec["install vcap submodules"] ], 
-    }
-  }
-
-  bundle { [ $cloudfoundry::params::components ] : }
+  cloudfoundry::bundle { [ $cloudfoundry::params::components ] : }
 
   $mysql_password = $cloudfoundry::params::mysql_password
   file { "/home/$cloudfoundry::params::user/vcap/services/mysql/config/mysql_node.yml":

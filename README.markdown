@@ -12,6 +12,7 @@ The module is made up of three classes:
 
 * cloudfoundry - the core class containined in init.pp
 * cloudfoundry::nodejs - installs NodeJS
+* cloudfoundry::bundle - contains the bundle definition that bundles gems
 * cloudfoundry::params - contains the control parameters for the modules 
 
 In the cloudfoundry::params class you can set the user, group you want to use CloudFoundry 
