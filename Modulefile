@@ -1,11 +1,8 @@
 name    'puppetlabs-cloudfoundry'
 version '0.0.1'
-source 'UNKNOWN'
-author 'puppetlabs'
+source 'https://github.com/jamtur01/puppetlabs-cloudfoundry'
+author 'James Turnbull'
 license 'Apache 2.0'
-summary 'A Puppet module for installing CloudFoundry'
-description 'UNKNOWN'
-project_page 'UNKNOWN'
-
-## Add dependencies, if any:
-# dependency 'username/name', '>= 1.2.0'
+summary 'A Puppet module for installing CloudFoundry VCAP'
+description 'A module for installing CloudFoundry VCAP'
+project_page 'https://github.com/jamtur01/puppetlabs-cloudfoundry'

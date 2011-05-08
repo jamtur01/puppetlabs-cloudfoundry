@@ -1,10 +1,31 @@
+# Class: cloudfoundry::nodejs
+#
+#   James Turnbull <james@lovedthanlost.net>
+#   Status: This class is working and installs NodeJS for CloudFoundry VCAP. 
+# 
+#   This class models NodeJS installation in Puppet
+#
+# Parameters: 
+#
+#   $cloudfoundry::params::nodejs_packages - NodeJS pre-req packages
+# 
+# Actions:
+# 
+#   Installs prereq packages
+#   Downloads and builds NodeJS
+# 
+# Requires:
+# 
+# Sample Usage: 
+#      
+#   include cloudfoundry::nodejs
+#
 class cloudfoundry::nodejs {
 
     include cloudfoundry::params
 
     package { $cloudfoundry::params::nodejs_packages:
         ensure => installed,
-        require => Exec[$cloudfoundry::params::package_update],
     }
 
     exec { "install nodejs":

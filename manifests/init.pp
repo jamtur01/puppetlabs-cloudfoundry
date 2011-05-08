@@ -1,3 +1,35 @@
+# Class: cloudfoundry
+#
+#   James Turnbull <james@lovedthanlost.net>
+#   Status: This class is working and installs CloudFoundry VCAP.
+#
+#   This class models CloudFoundry VCAP installation in Puppet
+#
+# Parameters:
+#
+#   $cloudfoundry::params::user           - User to run CloudFoundry 
+#   $cloudfoundry::params::packages       - Packages to install
+#   $cloudfoundry::params::gems           - Gems to install
+#   $cloudfoundry::params::components     - Components to Bundle gems for
+#   $cloudfoundry::params::mysql_password - The MySQL password to set 
+#
+# Actions:
+#
+#   Creates a CloudFoundry user (defaults to cloudfoudry) and home directory
+#   Installs required packages
+#   Installs RVM (argh) and Ruby 1.9.2
+#   Installs Gems
+#   Bundles required VCAP gems
+#   Installs and manages Nginx
+#
+# Requires:
+#
+#   NodeJS.  Available in class cloudfoundry::nodejs within this module
+#
+# Sample Usage:
+#
+#   include cloudfoundry
+#
 class cloudfoundry {
 
   include cloudfoundry::params
@@ -15,15 +47,14 @@ class cloudfoundry {
   exec { "install rvm":
       command => 'bash -c \'bash <(/usr/bin/curl -s https://rvm.beginrescueend.com/install/rvm)\'',
       creates => "/usr/local/rvm",
-      cwd => "/home/$cloudfoundry::params::user",
-      path => "/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin",
-      require => [ Package[$cloudfoundry::params::packages], User[$cloudfoundry::params::user] ]
+      path => "/bin:/usr/bin:/usr/sbin",
+      require => Package[$cloudfoundry::params::packages],
   }
 
   rvm_system_ruby { "ruby-1.9.2-p180":
-    default_use => true,
-    provider => rvm_system_ruby,
-    require => Exec["install rvm"],  
+      default_use => true,
+      provider => rvm_system_ruby,
+      require => Exec["install rvm"],  
   }
 
   Rvm_gem {
@@ -58,15 +89,20 @@ class cloudfoundry {
       require => Exec["create vcap repo"],
   }
 
-  define bundle { 
+  file { "/tmp/bundle_install.sh":
+      source => "puppet:///cloudfoundry/bundle_install.sh",
+      mode => 0755,
+      require => Rvm_gem["bundler"],
+  }
 
+  define bundle { 
     exec { $name:
-      command => "bundle install",
+      command => "/tmp/bundle_install.sh",
       cwd => "/home/$cloudfoundry::params::user/vcap/$name",
       timeout => 0,
       logoutput => true,
       path => "/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin",
-      require => [ Exec["install vcap submodules"], Rvm_gem["bundler"], Rvm_gem[$cloudfoundry::params::gems] ],
+      require => [ File["/tmp/bundle_install.sh"], Exec["install vcap submodules"] ], 
     }
   }
 
@@ -79,20 +115,22 @@ class cloudfoundry {
       require => Exec["install vcap submodules"],
   }
 
-  # Install VCAP directories
   file { [ "/var/vcap", "/var/vcap.local" ]:
       ensure => directory,
+      mode => 0775,
       owner => $cloudfoundry::params::user,
   }
 
   file { [ "/var/vcap/services", "/var/vcap/shared", "/var/vcap/sys", "/var/vcap/runtimes" ]:
       ensure => directory,
+      mode => 0775,
       owner => $cloudfoundry::params::user,
       require => File["/var/vcap"],
   }
 
   file { [ "/var/vcap/sys/log", "/var/vcap/sys/run" ]:
       ensure => directory,
+      mode => 0775,
       owner => $cloudfoundry::params::user,
       require => File["/var/vcap/sys"],
   }
@@ -103,7 +141,6 @@ class cloudfoundry {
       mode => 0777,
   }
 
-  # Manage nginx
   file { "/etc/nginx/nginx.conf":
       ensure => present,
       content => template("cloudfoundry/nginx.conf.erb"),

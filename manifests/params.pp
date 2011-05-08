@@ -1,3 +1,21 @@
+# Class: cloudfoundry::params
+#
+#   James Turnbull <james@lovedthanlost.net>
+#   Status: This class contains required parameters for installing CloudFoundry VCAP
+#
+# Parameters:
+#
+# Actions:
+#
+#   Sets global parameters
+#   Sets platform specific parameters
+#
+# Requires:
+#
+# Sample Usage:
+#
+#   include cloudfoundry::params
+#
 class cloudfoundry::params {
 
     $user           = 'cloudfoundry'
