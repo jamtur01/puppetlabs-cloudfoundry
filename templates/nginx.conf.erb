@@ -1,4 +1,4 @@
-user www-data;
+user <%= nginx_user %>;
 worker_processes  1;
 
 error_log  /var/log/nginx/error.log;

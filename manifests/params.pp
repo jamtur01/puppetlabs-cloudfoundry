@@ -30,6 +30,7 @@ class cloudfoundry::params {
                       "libmysqlclient-dev", "libpq-dev", "postgresql-client", "lsof", "psmisc",
                       "librmagick-ruby", "java-common", "openjdk-6-jre", "rake" ]
         $nodejs_packages = [ "python", "python-software-properties", "libssl-dev" ]
+        $nginx_user = 'www-data'
 
         exec { "apt-get update":
           path => "/bin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin",
@@ -41,7 +42,7 @@ class cloudfoundry::params {
           owner => root, 
           group => root, 
           mode => 0444, 
-          source => "puppet:///cloudfoundry/rpm-gpg/RPM-GPG-KEY-EPEL" 
+          source => "puppet:///cloudfoundry/RPM-GPG-KEY-EPEL" 
         }
         
         yumrepo { "epel": 
@@ -52,13 +53,14 @@ class cloudfoundry::params {
           require => File["/etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL"] 
         }
 
-        $packages = [ "ruby-devel", "ruby-­docs", "ruby-ri", "rubygems", "ruby-rdoc", "ruby-rake", 
+        $packages = [ "ruby-devel", "ruby-docs", "ruby-ri", "rubygems", "ruby-rdoc", 
                       "erlang", "autoconf", "curl", "git", "bison", "gcc", "gcc-c++", "kernel-devel",
                       "nginx", "lsof", "psmisc", "rubygem-rake", "libxslt", "libxslt-devel", "libxml2",
-                      "libxml2-devel", "readline-devel", "make", "mysql-client", "mysql-devel", "zlib-devel",
-                      "sqlite3", "sqlite3-devel", "sqlite3-ruby", "unzip", "zip", "ruby-mysql",  "postgresql", 
-                      "postgresql-devel", "imagemagick", "librmagick-ruby", "libmagickwand-dev", "java-1.6.0-openjdk", ]
-        $nodejs_packages = [ "python", "openssl-dev" ]
+                      "libxml2-devel", "readline-devel", "make", "mysql", "mysql-devel", "zlib-devel",
+                      "sqlite", "sqlite-devel", "ruby-sqlite3", "unzip", "zip", "ruby-mysql",  "postgresql", 
+                      "postgresql-devel", "ImageMagick", "ImageMagick-devel", "ruby-RMagick", "java-1.6.0-openjdk", ]
+        $nodejs_packages = [ "python", "openssl-devel" ]
+        $nginx_user = 'nobody'
       }
       default: { }
     }
