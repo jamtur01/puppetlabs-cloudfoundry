@@ -15,6 +15,8 @@
 #       Components to Bundle gems for
 #   $cloudfoundry::params::mysql_password:
 #       The MySQL password to set 
+#   $cloudfoundry::params::nginx_user:
+#       The user to run Nginx as
 #
 # Actions:
 #   Creates a CloudFoundry user (defaults to cloudfoudry) and home directory
@@ -26,6 +28,7 @@
 #
 # Requires:
 #   - NodeJS.  Available in class cloudfoundry::nodejs within this module
+#   - Bundler.  Available as a definition in cloudfoundry::bundle within this module
 #
 # Sample Usage:
 #   include cloudfoundry
@@ -57,6 +60,11 @@ class cloudfoundry {
       require => Exec["install rvm"],  
   }
 
+  rvm_system_ruby { "ruby-1.8.7":
+      provider => rvm_system_ruby,
+      require => Exec["install rvm"],
+  }
+
   Rvm_gem {
       ruby_version => "1.9.2-p180",
       provider => rvm__gem,
@@ -65,7 +73,7 @@ class cloudfoundry {
   rvm_gem { "bundler":
        ensure => "1.0.10",
        provider => rvm_gem,
-       require => [ Package[$cloudfoundry::params::packages], Rvm_system_ruby["ruby-1.9.2-p180"] ],
+       require => [ Package[$cloudfoundry::params::packages], Rvm_system_ruby["ruby-1.9.2-p180"], Rvm_system_ruby["ruby-1.8.7"] ],
   }
 
   rvm_gem { $cloudfoundry::params::gems:
